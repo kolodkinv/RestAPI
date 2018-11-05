@@ -1,0 +1,23 @@
+version: '2'
+
+services:
+
+    redis:
+        image: redis
+        env_file:
+            - ./dev.env
+
+    web:
+        build:
+          context: .
+        command: python manage.py runserver 0.0.0.0:8000
+        ports:
+            - "8000:8000"
+        depends_on:
+            - redis
+        links:
+            - redis
+        volumes:
+           - .:/code
+        env_file:
+            - ./dev.env

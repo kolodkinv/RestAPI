@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 import redis
 from rest_framework.fields import IntegerField
 
+from rest_api_service import settings
 from rest_api_service.exceptions import ResourceNotFoundError
 
 
@@ -45,7 +46,9 @@ class RedisStorage(Storage):
 
     def __init__(self, allow_filter=INT_FILTER):
         # ADD SINGLTON
-        self.redis = redis.StrictRedis(host='localhost', port=6379, db=0)
+        self.redis = redis.StrictRedis(host=settings.REDIS_HOST,
+                                       port=settings.REDIS_PORT,
+                                       db=settings.REDIS_DATABASE)
         self.allow_filter = allow_filter
 
     def create(self, instance):

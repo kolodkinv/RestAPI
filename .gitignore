@@ -1,2 +1,6 @@
-*.sqllite3
+*.sqlite3
+*.pyc
+*.rdb
+*.xml
+.idea/
 

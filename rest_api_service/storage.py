@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+"""Хранилище данных"""
 from abc import ABCMeta, abstractmethod
 import redis
 from rest_framework.fields import IntegerField
@@ -8,7 +8,7 @@ from rest_api_service import settings
 from rest_api_service.exceptions import ResourceNotFoundError
 
 
-class Storage:
+class Storage(object):
     """
     Асбтрактное хранилище данных с набором CRUD операций
     """
@@ -36,8 +36,10 @@ class RedisStorage(Storage):
     Хранилище данных - Redis
     """
 
-    INT_FILTER = 'integer'  # Фильтрация только целочисленных полей
-    ALL_FILTER = 'all'      # Фильтрация всех типов полей
+    # Фильтрация только целочисленных полей
+    INT_FILTER = 'integer'
+    # Фильтрация всех типов полей
+    ALL_FILTER = 'all'
 
     FILTER_EQUAL = '='
     FILTER_NOT_EQUAL = '!='
@@ -72,7 +74,7 @@ class RedisStorage(Storage):
                     filter_key = '{}:{}'.format(field, type_instance)
                     self.redis.zadd(filter_key, instance[field].value, key)
             else:
-                # TODO Добавить фильтрацию по всем полям. В задаче не требуется
+                # Добавить фильтрацию по всем полям. В задаче не требуется
                 pass
 
     def read(self, instance, pk=None, **kwargs):
@@ -92,15 +94,7 @@ class RedisStorage(Storage):
             result.append(self.get_hash_object(key))
         else:
             if 'filter' in kwargs and kwargs['filter']:
-                keys = set()
-                for idx, arg in enumerate(kwargs['filter']):
-                    if self.FILTER_EQUAL in arg:
-                        keys_by_arg = self.filter_by_equal(arg, type_instance)
-                    else:
-                        # TODO Добавить реализацию не равно, больше, меньше
-                        raise NotImplementedError
-
-                    keys = keys & set(keys_by_arg) if idx else set(keys_by_arg)
+                keys = self.filter_instances(kwargs['filter'], type_instance)
             else:
                 keys = self.redis.scan_iter('{}:*'.format(type_instance))
 
@@ -151,10 +145,28 @@ class RedisStorage(Storage):
                 if field == 'id':
                     continue
 
-                if self.allow_filter == RedisStorage.INT_FILTER:
-                    if type(instance.fields[field]) is IntegerField:
-                        filter_key = '{}:{}'.format(field, type_instance)
-                        self.redis.zrem(filter_key, key)
+                if self.allow_filter == RedisStorage.INT_FILTER and \
+                        type(instance.fields[field]) is IntegerField:
+                    filter_key = '{}:{}'.format(field, type_instance)
+                    self.redis.zrem(filter_key, key)
+
+    def filter_instances(self, filter_args, type_instance):
+        """
+        Фильтрация объектов в хранилище
+        :param filter_args: параметры фильтрации
+        :param type_instance: тип фильтруемых объектов
+        :return: список ИД удовлетворяющих фильтру
+        """
+        keys = set()
+        for idx, arg in enumerate(filter_args):
+            if self.FILTER_EQUAL in arg:
+                keys_by_arg = self.filter_by_equal(arg, type_instance)
+            else:
+                # Добавить реализацию не равно, больше, меньше
+                raise NotImplementedError
+
+            keys = keys & set(keys_by_arg) if idx else set(keys_by_arg)
+        return keys
 
     def filter_by_equal(self, argument, type_instance):
         """
@@ -165,7 +177,7 @@ class RedisStorage(Storage):
         """
         filter_args = argument.split(self.FILTER_EQUAL)
         filter_value = int(filter_args[1])
-        filter_key = '{}:{}'.format(filter_args[0],type_instance)
+        filter_key = '{}:{}'.format(filter_args[0], type_instance)
         return self.redis.zrangebyscore(filter_key, filter_value, filter_value)
 
     def get_hash_object(self, key):

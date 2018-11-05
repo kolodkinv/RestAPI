@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+"""Views"""
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,6 +10,9 @@ from rest_api_service.storage import RedisStorage
 
 
 class UserView(viewsets.ViewSet):
+    """
+    View пользователя
+    """
 
     def list(self, request):
         storage = RedisStorage()

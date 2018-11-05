@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
+"""Models"""
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
 class User(models.Model):
+    """
+    Модель пользователя
+    """
     MALE = 'M'
     FEMALE = 'F'
     SEX_CHOICES = ((MALE, 'Male'), (FEMALE, 'Female'))

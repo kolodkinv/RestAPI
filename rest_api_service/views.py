@@ -14,53 +14,52 @@ class UserView(viewsets.ViewSet):
     View пользователя
     """
 
+    def __init__(self, **kwargs):
+        super(UserView, self).__init__(**kwargs)
+        self.storage = RedisStorage()
+
     def list(self, request):
-        storage = RedisStorage()
-        users = storage.read(UserSerializer(), pk=None, **request.query_params)
+        users = self.storage.read(
+            UserSerializer(), pk=None, **request.query_params)
         return Response({'users': users})
 
     def create(self, request):
         user = UserSerializer(data=request.data)
         if user.is_valid():
-            storage = RedisStorage()
-            storage.create(user)
+            self.storage.create(user)
             return Response(user.data, status=status.HTTP_201_CREATED)
         return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def retrieve(self, request, pk=None):
-        storage = RedisStorage()
         try:
-            result = storage.read(UserSerializer(), pk)
+            result = self.storage.read(UserSerializer(), pk)
         except ResourceNotFoundError:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(result, status=status.HTTP_200_OK)
 
     def update(self, request, pk=None):
-        storage = RedisStorage()
         user = UserSerializer(data=request.data)
         if user.is_valid() and pk:
             try:
-                result = storage.update(user, pk)
+                result = self.storage.update(user, pk)
             except ResourceNotFoundError:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             return Response(result.update({'id': pk}))
         return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, pk=None):
-        storage = RedisStorage()
         user = UserSerializer(data=request.data, partial=True)
         if user.is_valid() and pk:
             try:
-                result = storage.update(user, pk)
+                result = self.storage.update(user, pk)
             except ResourceNotFoundError:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             return Response(result.update({'id': pk}))
         return Response(user.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, pk=None):
-        storage = RedisStorage()
         try:
-            storage.delete(UserSerializer(), pk)
+            self.storage.delete(UserSerializer(), pk)
         except ResourceNotFoundError:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
